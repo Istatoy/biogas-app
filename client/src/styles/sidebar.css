@@ -1,0 +1,46 @@
+/* client/src/styles/sidebar.css */
+.sidebar {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  width: 180px;
+  height: calc(100% - 60px);
+  background-color: #f7f7f7;
+  border-right: 1px solid #ddd;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.menu-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.menu-list li {
+  margin-bottom: 15px;
+}
+
+.menu-list a {
+  text-decoration: none;
+  color: #333;
+}
+
+.menu-list a.active {
+  font-weight: bold;
+  color: #2a9d8f;
+}
+
+.logout-section {
+  margin-top: 40px;
+  text-align: center;
+}
+
+.logout-section button {
+  background-color: #e76f51;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+}

@@ -1,0 +1,18 @@
+/* client/src/styles/global.css */
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #f0f0f0;
+}
+
+.page-container {
+  margin-left: 220px; /* ширина sidebar */
+  padding: 80px 20px 20px; /* учитываем высоту header (60px) */
+}
+
+@media (max-width: 768px) {
+  .page-container {
+    margin-left: 0;
+    padding: 80px 10px 10px;
+  }
+}

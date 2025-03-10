@@ -1,0 +1,68 @@
+/* client/src/styles/table.css */
+.page-container {
+    margin-left: 240px; /* чтобы не перекрывалась sidebar */
+    padding: 80px 20px 20px; /* учитываем фиксированный Header */
+  }
+  
+  .form-container {
+    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .form-container input {
+    padding: 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  .form-container button {
+    padding: 6px 12px;
+    background-color: #2a9d8f;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .download-buttons {
+    margin-bottom: 20px;
+  }
+  
+  .download-buttons button,
+  .download-buttons a {
+    margin-right: 10px;
+    padding: 6px 12px;
+    background-color: #e76f51;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+  }
+  
+  .data-table th,
+  .data-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+  }
+  
+  @media (max-width: 768px) {
+    .page-container {
+      margin-left: 0;
+      padding: 80px 10px 10px;
+    }
+    .data-table {
+      display: block;
+      overflow-x: auto;
+    }
+  }
+  
