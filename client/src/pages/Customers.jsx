@@ -1,30 +1,46 @@
 // client/src/pages/Customers.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import {
+  Box,
+  Paper,
+  Typography,
+  Button,
+  TextField,
+  FormControl,
+  Select,
+  MenuItem,
+  Table,
+  TableHead,
+  TableCell,
+  TableBody,
+  TableRow,
+  TableContainer,
+  IconButton,
+  Stack
+} from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
+import { KeyboardArrowLeft, KeyboardArrowRight } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import domtoimage from 'dom-to-image';
-import '../styles/table.css';
+import axios from 'axios';
 
 function Customers() {
   const [customers, setCustomers] = useState([]);
   const [searchValue, setSearchValue] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(5);
 
-  // Форма CRUD
+  // Форма для добавления/редактирования (если нужно)
   const [formData, setFormData] = useState({
     external_id: '',
     first_name: '',
     last_name: '',
     email: '',
     phone: '',
-    contact_preference: '',
-    system_status: '',
-    gender: '',
-    last_data_at: '',
+    // например, поля: contact_preference, system_status, gender, last_data_at, status ...
     status: '1'
   });
   const [editingId, setEditingId] = useState(null);
@@ -41,11 +57,13 @@ function Customers() {
       .catch(err => console.error(err));
   };
 
-  // Фильтрация/поиск
+  // Фильтрация (по статусу, по поиску)
   const filteredCustomers = customers.filter(c => {
+    // фильтр по статусу
     if (statusFilter !== '') {
       if (String(c.status) !== statusFilter) return false;
     }
+    // поиск (external_id, first_name+last_name, email)
     const search = searchValue.toLowerCase();
     const fullName = (c.first_name + ' ' + c.last_name).toLowerCase();
     if (
@@ -63,69 +81,6 @@ function Customers() {
   const indexOfFirst = indexOfLast - pageSize;
   const currentData = filteredCustomers.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.ceil(filteredCustomers.length / pageSize);
-
-  // Изменение формы
-  const handleChange = (e) => {
-    setFormData({...formData, [e.target.name]: e.target.value});
-  };
-
-  // Создание/Обновление
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (editingId) {
-        // Обновление
-        await axios.put(`/api/customers/${editingId}`, formData);
-        setEditingId(null);
-      } else {
-        // Создание
-        await axios.post('/api/customers', formData);
-      }
-      // Очистка формы
-      setFormData({
-        external_id: '',
-        first_name: '',
-        last_name: '',
-        email: '',
-        phone: '',
-        contact_preference: '',
-        system_status: '',
-        gender: '',
-        last_data_at: '',
-        status: '1'
-      });
-      fetchCustomers();
-    } catch (error) {
-      console.error('Error saving customer:', error);
-    }
-  };
-
-  // Редактирование (заполнение формы)
-  const handleEdit = (cust) => {
-    setEditingId(cust.id);
-    setFormData({
-      external_id: cust.external_id || '',
-      first_name: cust.first_name || '',
-      last_name: cust.last_name || '',
-      email: cust.email || '',
-      phone: cust.phone || '',
-      contact_preference: cust.contact_preference || '',
-      system_status: cust.system_status || '',
-      gender: cust.gender || '',
-      last_data_at: cust.last_data_at ? cust.last_data_at.substring(0, 16) : '',
-      status: cust.status?.toString() || '1'
-    });
-  };
-
-  // Удаление
-  const handleDelete = async (id) => {
-    try {
-      await axios.delete(`/api/customers/${id}`);
-      fetchCustomers();
-    } catch (error) {
-      console.error('Error deleting customer:', error);
-    }
-  };
 
   // Экспорт
   const exportXLS = () => {
@@ -173,209 +128,245 @@ function Customers() {
     });
   };
 
+  // Добавление/редактирование (если нужно)
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingId) {
+        // обновление
+        await axios.put(`/api/customers/${editingId}`, formData);
+        setEditingId(null);
+      } else {
+        // добавление
+        await axios.post('/api/customers', formData);
+      }
+      // сброс формы
+      setFormData({
+        external_id: '',
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone: '',
+        status: '1'
+      });
+      fetchCustomers();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleEdit = (cust) => {
+    setEditingId(cust.id);
+    setFormData({
+      external_id: cust.external_id || '',
+      first_name: cust.first_name || '',
+      last_name: cust.last_name || '',
+      email: cust.email || '',
+      phone: cust.phone || '',
+      status: String(cust.status || '1')
+    });
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await axios.delete(`/api/customers/${id}`);
+      fetchCustomers();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   return (
-    <div className="page-container">
-      <h2>Customers</h2>
+    <Box sx={{ mt: 10, ml: { xs: 0, sm: '220px' }, p: 2 }}>
+      <Typography variant="h4" gutterBottom>
+        Customers
+      </Typography>
 
-      {/* Форма для CRUD */}
-      <form onSubmit={handleSubmit} className="form-container">
-        <input
-          type="text"
-          name="external_id"
-          placeholder="External ID"
-          value={formData.external_id}
-          onChange={handleChange}
-          required
-        />
-        <input
-          type="text"
-          name="first_name"
-          placeholder="First Name"
-          value={formData.first_name}
-          onChange={handleChange}
-        />
-        <input
-          type="text"
-          name="last_name"
-          placeholder="Last Name"
-          value={formData.last_name}
-          onChange={handleChange}
-        />
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={handleChange}
-        />
-        <input
-          type="text"
-          name="phone"
-          placeholder="Phone"
-          value={formData.phone}
-          onChange={handleChange}
-        />
-        <input
-          type="text"
-          name="contact_preference"
-          placeholder="Contact Pref"
-          value={formData.contact_preference}
-          onChange={handleChange}
-        />
-        <input
-          type="text"
-          name="system_status"
-          placeholder="System Status"
-          value={formData.system_status}
-          onChange={handleChange}
-        />
-        <input
-          type="text"
-          name="gender"
-          placeholder="Gender"
-          value={formData.gender}
-          onChange={handleChange}
-        />
-        <label>
-          Last Data At:
-          <input
-            type="datetime-local"
-            name="last_data_at"
-            value={formData.last_data_at}
-            onChange={handleChange}
+      {/* Форма для добавления (если нужно) */}
+      <Paper sx={{ p: 2, mb: 2 }}>
+        <Typography variant="h6" gutterBottom>
+          {editingId ? 'Edit Customer' : 'Add Customer'}
+        </Typography>
+        <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+          <TextField
+            label="External ID"
+            variant="outlined"
+            size="small"
+            required
+            value={formData.external_id}
+            onChange={(e) => setFormData({ ...formData, external_id: e.target.value })}
           />
-        </label>
-        <label>
-          Status:
-          <select name="status" value={formData.status} onChange={handleChange}>
-            <option value="1">Active</option>
-            <option value="0">Inactive</option>
-          </select>
-        </label>
+          <TextField
+            label="First Name"
+            variant="outlined"
+            size="small"
+            value={formData.first_name}
+            onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+          />
+          <TextField
+            label="Last Name"
+            variant="outlined"
+            size="small"
+            value={formData.last_name}
+            onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+          />
+          <TextField
+            label="Email"
+            variant="outlined"
+            size="small"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          />
+          <TextField
+            label="Phone"
+            variant="outlined"
+            size="small"
+            value={formData.phone}
+            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+          />
+          {/* можно добавить поля system_status, gender, last_data_at, etc. */}
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <Select
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+            >
+              <MenuItem value="1">Active</MenuItem>
+              <MenuItem value="0">Inactive</MenuItem>
+            </Select>
+          </FormControl>
 
-        <button type="submit">{editingId ? 'Update' : 'Add'}</button>
-      </form>
+          <Button variant="contained" sx={{ backgroundColor: '#2a9d8f' }} type="submit">
+            {editingId ? 'Update' : 'Add'}
+          </Button>
+        </Box>
+      </Paper>
 
-      {/* Панель поиска/фильтра */}
-      <div className="filters-container">
-        <input
-          type="text"
-          placeholder="Search by external_id, name, or email"
-          value={searchValue}
-          onChange={(e) => {
-            setSearchValue(e.target.value);
-            setCurrentPage(1);
-          }}
-        />
-        <select
-          value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value);
-            setCurrentPage(1);
-          }}
-        >
-          <option value="">All statuses</option>
-          <option value="1">Active</option>
-          <option value="0">Inactive</option>
-        </select>
-        <button onClick={() => {
-          setSearchValue('');
-          setStatusFilter('');
-          setCurrentPage(1);
-        }}>
-          Clear
-        </button>
-      </div>
-
-      {/* Кнопки экспорта */}
-      <div className="download-buttons">
-        <button onClick={exportXLS}>XLS</button>
-        <button onClick={exportPDF}>PDF</button>
-        <button onClick={exportPNG}>PNG</button>
-        <button onClick={exportJPG}>JPG</button>
-        <button onClick={exportSVG}>SVG</button>
-      </div>
-
-      {/* Таблица + пагинация */}
-      <div ref={tableRef}>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>External ID</th>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Phone</th>
-              <th>Last Data</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentData.map(c => (
-              <tr key={c.id}>
-                <td>{c.id}</td>
-                <td>{c.external_id}</td>
-                <td>{c.first_name} {c.last_name}</td>
-                <td>{c.email}</td>
-                <td>{c.phone}</td>
-                <td>{c.last_data_at || 'Never'}</td>
-                <td>{c.status === 1 ? 'Active' : 'Inactive'}</td>
-                <td>
-                  <button onClick={() => handleEdit(c)}>Edit</button>
-                  <button onClick={() => handleDelete(c.id)}>Delete</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Пагинация */}
-      <div className="pagination-container">
-        <div className="rows-per-page">
-          <span>Rows per page: </span>
-          <select
-            value={pageSize}
+      {/* Панель поиска и экспорта */}
+      <Paper sx={{ p: 2, mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', backgroundColor: '#fff', borderRadius: 1, p: 1, boxShadow: 1 }}>
+          <SearchIcon sx={{ color: '#2a9d8f', mr: 1 }} />
+          <TextField
+            variant="standard"
+            placeholder="search..."
+            value={searchValue}
             onChange={(e) => {
-              setPageSize(parseInt(e.target.value));
+              setSearchValue(e.target.value);
+              setCurrentPage(1);
+            }}
+            InputProps={{ disableUnderline: true }}
+            sx={{ fontFamily: 'Roboto' }}
+          />
+        </Box>
+        <FormControl variant="standard" sx={{ minWidth: 120 }}>
+          <Select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
               setCurrentPage(1);
             }}
           >
-            <option value="5">5</option>
-            <option value="10">10</option>
-            <option value="20">20</option>
-          </select>
-        </div>
-        <div className="page-info">
-          {indexOfFirst + 1}–
-          {Math.min(indexOfLast, filteredCustomers.length)} of {filteredCustomers.length}
-        </div>
-        <div className="page-buttons">
-          <button
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage(currentPage - 1)}
+            <MenuItem value=""><em>All</em></MenuItem>
+            <MenuItem value="1">Active</MenuItem>
+            <MenuItem value="0">Inactive</MenuItem>
+          </Select>
+        </FormControl>
+        <Button
+          variant="contained"
+          sx={{ backgroundColor: '#2a9d8f' }}
+          onClick={() => {
+            setSearchValue('');
+            setStatusFilter('');
+            setCurrentPage(1);
+          }}
+        >
+          Clear
+        </Button>
+        <Box sx={{ flexGrow: 1 }} />
+        <Stack direction="row" spacing={1}>
+          <Button variant="contained" onClick={exportXLS}>XLS</Button>
+          <Button variant="contained" onClick={exportPDF}>PDF</Button>
+          <Button variant="contained" onClick={exportPNG}>PNG</Button>
+          <Button variant="contained" onClick={exportJPG}>JPG</Button>
+          <Button variant="contained" onClick={exportSVG}>SVG</Button>
+        </Stack>
+      </Paper>
+
+      {/* Таблица */}
+      <TableContainer component={Paper} sx={{ mb: 2 }}>
+        <Box ref={tableRef}>
+          <Table>
+            <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
+              <TableRow>
+                <TableCell>ID</TableCell>
+                <TableCell>External ID</TableCell>
+                <TableCell>Name</TableCell>
+                <TableCell>Email</TableCell>
+                <TableCell>Phone</TableCell>
+                <TableCell>Last Data At</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {currentData.map((cust) => (
+                <TableRow key={cust.id}>
+                  <TableCell>{cust.id}</TableCell>
+                  <TableCell>{cust.external_id}</TableCell>
+                  <TableCell>{cust.first_name} {cust.last_name}</TableCell>
+                  <TableCell>{cust.email}</TableCell>
+                  <TableCell>{cust.phone}</TableCell>
+                  <TableCell>{cust.last_data_at || 'Never'}</TableCell>
+                  <TableCell>{cust.status === 1 ? 'Active' : 'Inactive'}</TableCell>
+                  <TableCell>
+                    <Button variant="text" onClick={() => handleEdit(cust)}>
+                      Edit
+                    </Button>
+                    <Button variant="text" onClick={() => handleDelete(cust.id)}>
+                      Delete
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Box>
+      </TableContainer>
+
+      {/* Пагинация */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', mt: 1 }}>
+        <Typography variant="body2" sx={{ mr: 2 }}>Rows per page:</Typography>
+        <FormControl variant="standard" sx={{ minWidth: 60, mr: 2 }}>
+          <Select
+            value={pageSize}
+            onChange={(e) => {
+              setPageSize(Number(e.target.value));
+              setCurrentPage(1);
+            }}
           >
-            Prev
-          </button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-            <button
-              key={page}
-              className={page === currentPage ? 'active' : ''}
-              onClick={() => setCurrentPage(page)}
-            >
-              {page}
-            </button>
-          ))}
-          <button
-            disabled={currentPage === totalPages || totalPages === 0}
-            onClick={() => setCurrentPage(currentPage + 1)}
-          >
-            Next
-          </button>
-        </div>
-      </div>
-    </div>
+            <MenuItem value={5}>5</MenuItem>
+            <MenuItem value={10}>10</MenuItem>
+            <MenuItem value={20}>20</MenuItem>
+          </Select>
+        </FormControl>
+        <Typography variant="body2" sx={{ mr: 2 }}>
+          {indexOfFirst + 1}–{Math.min(indexOfLast, filteredCustomers.length)} of {filteredCustomers.length}
+        </Typography>
+        <IconButton
+          onClick={() => setCurrentPage(currentPage - 1)}
+          disabled={currentPage === 1}
+          size="small"
+        >
+          <KeyboardArrowLeft />
+        </IconButton>
+        <IconButton
+          onClick={() => setCurrentPage(currentPage + 1)}
+          disabled={currentPage === totalPages || totalPages === 0}
+          size="small"
+        >
+          <KeyboardArrowRight />
+        </IconButton>
+      </Box>
+    </Box>
   );
 }
 

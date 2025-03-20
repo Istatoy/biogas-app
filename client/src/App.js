@@ -1,6 +1,8 @@
 // client/src/App.jsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Login from './pages/Login';
+import Register from './pages/Register';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import Overview from './pages/Overview';
@@ -10,8 +12,9 @@ import Digesters from './pages/Digesters';
 import Nodes from './pages/Nodes';
 import Reports from './pages/Reports';
 import Profile from './pages/Profile';
-import Login from './pages/Login';
+
 import './styles/global.css';
+
 
 function App() {
   return (
@@ -20,7 +23,8 @@ function App() {
       <Sidebar />
       <div className="content">
         <Routes>
-          <Route path="/login" element={<Login />} />
+          <Route exact path="/login" component={Login} />
+          <Route exact path="/register" component={Register} />
           <Route path="/" element={<Overview />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/customers" element={<Customers />} />

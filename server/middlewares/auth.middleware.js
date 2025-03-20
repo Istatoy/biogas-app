@@ -1,42 +1,32 @@
 // server/middlewares/auth.middleware.js
-require('dotenv').config(); // Если не загружается в главном файле
 const jwt = require('jsonwebtoken');
 
-// Получаем секрет из переменной окружения
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET не определён. Проверьте настройки переменных окружения!');
-}
-
-exports.verifyToken = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    return res.status(401).json({ error: 'No token provided' });
-  }
-  const token = authHeader.split(' ')[1];
+// Проверка наличия и корректности JWT-токена
+const verifyToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
   if (!token) {
-    return res.status(401).json({ error: 'Malformed token' });
+    return res.status(403).json({ message: 'Токен не предоставлен.' });
   }
-
-  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+  jwt.verify(token, process.env.JWT_SECRET || '2a751a4e6d638cfc403108650cae2f56f1f91b185aea7393c959fa254172adc3d02035af272ca3b7c1502b08c55c82fd8cc354f62e463323038b91ae6ee9c7f4', (err, decoded) => {
     if (err) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(500).json({ message: 'Ошибка аутентификации токена.' });
     }
-    req.userId = decoded.userId;
-    req.roleId = decoded.roleId;
+    req.userId = decoded.id;
+    req.userRole = decoded.role;
     next();
   });
 };
 
-exports.requireRole = (roles) => {
-  return (req, res, next) => {
-    // roles - массив разрешённых ролей (например ['admin'])
-    // req.roleId - текущая роль пользователя
-    // Нужно проверить, есть ли у пользователя соответствующая роль
-    // (например, хранить в БД roles.id = 1 => admin, 2 => manager и т.п.)
-    if (!roles.includes(req.roleId)) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-    next();
-  };
+// Проверка, что пользователь – администратор (role_id = 2)
+const isAdmin = (req, res, next) => {
+  if (req.userRole !== 2) {
+    return res.status(403).json({ message: 'Требуется роль администратора.' });
+  }
+  next();
+};
+
+module.exports = {
+  verifyToken,
+  isAdmin
 };

@@ -1,50 +1,74 @@
 // client/src/pages/Overview.jsx
 import React, { useEffect, useState, useRef } from 'react';
-import axios from 'axios';
+import {
+  Box,
+  Button,
+  Typography,
+  TextField,
+  FormControl,
+  Select,
+  MenuItem,
+  InputLabel,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  IconButton,
+  Stack
+} from '@mui/material';
 import { GoogleMap, Marker, InfoWindow, useJsApiLoader } from '@react-google-maps/api';
+import SearchIcon from '@mui/icons-material/Search';
+import { KeyboardArrowLeft, KeyboardArrowRight } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import domtoimage from 'dom-to-image';
-import '../styles/overview.css';
+import axios from 'axios';
 
-// Параметры карты (размер + зелёная рамка)
 const mapContainerStyle = {
   width: '100%',
-  height: '400px',
-  border: '4px solid darkgreen',
-  borderRadius: '6px'
+  height: '400px'
 };
 
 function Overview() {
-  // -------------------- Карта --------------------
+  // Для карты
   const [digesters, setDigesters] = useState([]);
   const [selectedDigester, setSelectedDigester] = useState(null);
-  const [showMap, setShowMap] = useState(true); // Hide/Show
+  const [showMap, setShowMap] = useState(true);
 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: 'AIzaSyAMaDUBXsDuAm3VbT6cvoGSklR2Sgq9fN4'
+    googleMapsApiKey: ' AIzaSyAMaDUBXsDuAm3VbT6cvoGSklR2Sgq9fN4' 
   });
 
   useEffect(() => {
-    // Загружаем digesters (для маркеров)
+    // Загружаем данные для маркеров (digesters)
     axios.get('/api/digesters')
       .then(res => setDigesters(res.data))
       .catch(err => console.error(err));
   }, []);
 
-  // -------------------- Таблица Customers (read-only) --------------------
+  // Центр карты (если есть данные)
+  let center = { lat: 0, lng: 0 };
+  if (digesters.length > 0) {
+    center = {
+      lat: parseFloat(digesters[0].lat),
+      lng: parseFloat(digesters[0].lng)
+    };
+  }
+
+  // Для таблицы Customers
   const [customers, setCustomers] = useState([]);
   const [searchValue, setSearchValue] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
-
-  const tableRef = useRef(null); // для экспорта PDF/PNG/JPG/SVG
+  const tableRef = useRef(null);
 
   useEffect(() => {
-    // Загружаем список клиентов
     fetchCustomers();
   }, []);
 
@@ -54,13 +78,11 @@ function Overview() {
       .catch(err => console.error(err));
   };
 
-  // Фильтрация/поиск (на клиенте)
+  // Фильтрация клиентов
   const filteredCustomers = customers.filter(c => {
-    // Фильтр по статусу (0 или 1)
     if (statusFilter !== '') {
       if (String(c.status) !== statusFilter) return false;
     }
-    // Поиск по external_id, имени, email
     const search = searchValue.toLowerCase();
     const fullName = (c.first_name + ' ' + c.last_name).toLowerCase();
     if (
@@ -79,7 +101,7 @@ function Overview() {
   const currentData = filteredCustomers.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.ceil(filteredCustomers.length / pageSize);
 
-  // Экспорт
+  // Экспорт данных
   const exportXLS = () => {
     const worksheet = XLSX.utils.json_to_sheet(filteredCustomers);
     const workbook = XLSX.utils.book_new();
@@ -125,29 +147,26 @@ function Overview() {
     });
   };
 
-  // Центр карты
-  let center = { lat: 0, lng: 0 };
-  if (digesters.length > 0) {
-    center = {
-      lat: parseFloat(digesters[0].lat),
-      lng: parseFloat(digesters[0].lng)
-    };
-  }
-
   return (
-    <div className="page-container">
-      <h2>Overview</h2>
+    <Box className="page-container" sx={{ mt: 10, ml: { xs: 0, sm: '220px' }, p: 2 }}>
+      <Typography variant="h4" gutterBottom>
+        Overview
+      </Typography>
 
-      {/* Кнопка Hide/Show Map */}
-      <div className="map-actions">
-        <button onClick={() => setShowMap(!showMap)}>
+      {/* Кнопка переключения карты */}
+      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
+        <Button
+          variant="contained"
+          sx={{ backgroundColor: '#2a9d8f', fontSize: '1rem', py: 1, px: 2 }}
+          onClick={() => setShowMap(!showMap)}
+        >
           {showMap ? 'Hide Map' : 'Show Map'}
-        </button>
-      </div>
+        </Button>
+      </Box>
 
-      {/* Карта (только если showMap = true) */}
+      {/* Карта */}
       {showMap && isLoaded && (
-        <div className="map-wrapper">
+        <Paper sx={{ border: '4px solid #2a9d8f', borderRadius: 2, mb: 3, overflow: 'hidden' }}>
           <GoogleMap
             mapContainerStyle={mapContainerStyle}
             center={center}
@@ -171,134 +190,139 @@ function Overview() {
                 }}
                 onCloseClick={() => setSelectedDigester(null)}
               >
-                <div>
-                  <h3>{selectedDigester.external_id}</h3>
-                  <p>Type: {selectedDigester.type}</p>
-                  <p>Lat: {selectedDigester.lat}, Lng: {selectedDigester.lng}</p>
-                </div>
+                <Box>
+                  <Typography variant="subtitle1">{selectedDigester.external_id}</Typography>
+                  <Typography variant="body2">Type: {selectedDigester.type}</Typography>
+                  <Typography variant="body2">
+                    Lat: {selectedDigester.lat}, Lng: {selectedDigester.lng}
+                  </Typography>
+                </Box>
               </InfoWindow>
             )}
           </GoogleMap>
-        </div>
+        </Paper>
       )}
 
-      {/* Поиск и фильтр */}
-      <div className="filters-container">
-        <input
-          type="text"
-          placeholder="Search by external_id, name, or email"
-          value={searchValue}
-          onChange={(e) => {
-            setSearchValue(e.target.value);
-            setCurrentPage(1);
-          }}
-        />
-        <select
-          value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value);
+      {/* Панель поиска и фильтра */}
+      <Paper sx={{ p: 2, mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', backgroundColor: '#fff', borderRadius: 1, p: 1, boxShadow: 1 }}>
+          <SearchIcon sx={{ color: '#2a9d8f', mr: 1 }} />
+          <TextField
+            variant="standard"
+            placeholder="search..."
+            value={searchValue}
+            onChange={(e) => {
+              setSearchValue(e.target.value);
+              setCurrentPage(1);
+            }}
+            InputProps={{ disableUnderline: true }}
+            sx={{ fontFamily: 'Roboto' }}
+          />
+        </Box>
+        <FormControl variant="standard" sx={{ minWidth: 120 }}>
+          <InputLabel>All statuses</InputLabel>
+          <Select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setCurrentPage(1);
+            }}
+            label="All statuses"
+          >
+            <MenuItem value=""><em>All</em></MenuItem>
+            <MenuItem value="1">Active</MenuItem>
+            <MenuItem value="0">Inactive</MenuItem>
+          </Select>
+        </FormControl>
+        <Button
+          variant="contained"
+          sx={{ backgroundColor: '#2a9d8f' }}
+          onClick={() => {
+            setSearchValue('');
+            setStatusFilter('');
             setCurrentPage(1);
           }}
         >
-          <option value="">All statuses</option>
-          <option value="1">Active</option>
-          <option value="0">Inactive</option>
-        </select>
-        <button onClick={() => {
-          setSearchValue('');
-          setStatusFilter('');
-          setCurrentPage(1);
-        }}>
           Clear
-        </button>
+        </Button>
+        <Box sx={{ flexGrow: 1 }} />
+        {/* Кнопки экспорта */}
+        <Stack direction="row" spacing={1}>
+          <Button variant="contained" className="export-button" onClick={exportXLS}>XLS</Button>
+          <Button variant="contained" className="export-button" onClick={exportPDF}>PDF</Button>
+          <Button variant="contained" className="export-button" onClick={exportPNG}>PNG</Button>
+          <Button variant="contained" className="export-button" onClick={exportJPG}>JPG</Button>
+          <Button variant="contained" className="export-button" onClick={exportSVG}>SVG</Button>
+        </Stack>
+      </Paper>
 
-        <div className="download-buttons">
-          <button onClick={exportXLS}>XLS</button>
-          <button onClick={exportPDF}>PDF</button>
-          <button onClick={exportPNG}>PNG</button>
-          <button onClick={exportJPG}>JPG</button>
-          <button onClick={exportSVG}>SVG</button>
-        </div>
-      </div>
-
-      {/* Таблица (read-only) */}
-      <div className="table-container" ref={tableRef}>
-        <p className="table-info">
-          {filteredCustomers.length} Customer(s) found
-        </p>
-        <table className="overview-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>External ID</th>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Phone</th>
-              <th>Last Data</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentData.map((cust) => (
-              <tr key={cust.id}>
-                <td>{cust.id}</td>
-                <td>{cust.external_id}</td>
-                <td>{cust.first_name} {cust.last_name}</td>
-                <td>{cust.email}</td>
-                <td>{cust.phone}</td>
-                <td>{cust.last_data_at ? cust.last_data_at : 'Never'}</td>
-                <td>{cust.status === 1 ? 'Active' : 'Inactive'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* Таблица с данными */}
+      <TableContainer component={Paper} sx={{ mb: 2 }}>
+        <Box ref={tableRef}>
+          <Table>
+            <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
+              <TableRow>
+                <TableCell>ID</TableCell>
+                <TableCell>External ID</TableCell>
+                <TableCell>Name</TableCell>
+                <TableCell>Email</TableCell>
+                <TableCell>Phone</TableCell>
+                <TableCell>Last Data</TableCell>
+                <TableCell>Status</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {currentData.map((cust) => (
+                <TableRow key={cust.id}>
+                  <TableCell>{cust.id}</TableCell>
+                  <TableCell>{cust.external_id}</TableCell>
+                  <TableCell>{cust.first_name} {cust.last_name}</TableCell>
+                  <TableCell>{cust.email}</TableCell>
+                  <TableCell>{cust.phone}</TableCell>
+                  <TableCell>{cust.last_data_at ? cust.last_data_at : 'Never'}</TableCell>
+                  <TableCell>{cust.status === 1 ? 'Active' : 'Inactive'}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Box>
+      </TableContainer>
 
       {/* Пагинация */}
-      <div className="pagination-container">
-        <div className="rows-per-page">
-          <span>Rows per page: </span>
-          <select
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', mt: 1 }}>
+        <Typography variant="body2" sx={{ mr: 2 }}>Rows per page:</Typography>
+        <FormControl variant="standard" sx={{ minWidth: 60, mr: 2 }}>
+          <Select
             value={pageSize}
             onChange={(e) => {
-              setPageSize(parseInt(e.target.value));
+              setPageSize(Number(e.target.value));
               setCurrentPage(1);
             }}
           >
-            <option value="5">5</option>
-            <option value="10">10</option>
-            <option value="20">20</option>
-          </select>
-        </div>
-        <div className="page-info">
-          {indexOfFirst + 1}–
-          {Math.min(indexOfLast, filteredCustomers.length)} of {filteredCustomers.length}
-        </div>
-        <div className="page-buttons">
-          <button
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage(currentPage - 1)}
-          >
-            Prev
-          </button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-            <button
-              key={page}
-              className={page === currentPage ? 'active' : ''}
-              onClick={() => setCurrentPage(page)}
-            >
-              {page}
-            </button>
-          ))}
-          <button
-            disabled={currentPage === totalPages || totalPages === 0}
-            onClick={() => setCurrentPage(currentPage + 1)}
-          >
-            Next
-          </button>
-        </div>
-      </div>
-    </div>
+            <MenuItem value={5}>5</MenuItem>
+            <MenuItem value={10}>10</MenuItem>
+            <MenuItem value={20}>20</MenuItem>
+          </Select>
+        </FormControl>
+        <Typography variant="body2" sx={{ mr: 2 }}>
+          {indexOfFirst + 1}–{Math.min(indexOfLast, filteredCustomers.length)} of {filteredCustomers.length}
+        </Typography>
+        <IconButton
+          onClick={() => setCurrentPage(currentPage - 1)}
+          disabled={currentPage === 1}
+          size="small"
+        >
+          <KeyboardArrowLeft />
+        </IconButton>
+        <IconButton
+          onClick={() => setCurrentPage(currentPage + 1)}
+          disabled={currentPage === totalPages || totalPages === 0}
+          size="small"
+        >
+          <KeyboardArrowRight />
+        </IconButton>
+      </Box>
+    </Box>
   );
 }
 

@@ -1,0 +1,16 @@
+/* client/src/styles/MyProfile.css */
+.profile-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .profile-details p {
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
+  
+  .error-message {
+    color: red;
+  }
+  

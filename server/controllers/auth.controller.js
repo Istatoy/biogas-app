@@ -1,32 +1,71 @@
 // server/controllers/auth.controller.js
-const jwt = require('jsonwebtoken');
+const db = require('../models'); // убедитесь, что модель User экспортируется из db.models
 const bcrypt = require('bcrypt');
-require('dotenv').config(); // Загружаем переменные окружения
+const jwt = require('jsonwebtoken');
 
-// Получаем секрет из переменной окружения
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET is not определён. Проверьте переменные окружения!');
-}
+const User = db.User; // Предполагается, что модель пользователя называется User
 
-exports.login = (connection) => (req, res) => {
-  const { email, password } = req.body;
-  const sql = 'SELECT * FROM users WHERE email = ? AND status = "active"';
-  connection.query(sql, [email], async (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (results.length === 0) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+// Регистрация нового пользователя
+const register = async (req, res) => {
+  try {
+    const { firstName, lastName, email, password } = req.body;
+    if (!firstName || !lastName || !email || !password) {
+      return res.status(400).json({ message: 'Все поля обязательны.' });
     }
-    const user = results[0];
-    // Сравниваем пароль
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+    // Проверяем, существует ли пользователь с таким email
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Email уже используется.' });
     }
-    // Генерируем токен
-    const token = jwt.sign({ userId: user.id, roleId: user.role_id }, JWT_SECRET, {
-      expiresIn: '1d'
+    // Хэшируем пароль
+    const hashedPassword = await bcrypt.hash(password, 10);
+    // Создаём нового пользователя с role_id = 1 (обычный пользователь)
+    const newUser = await User.create({
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword,
+      role_id: 1
     });
-    res.json({ token });
-  });
+    // Можно добавить отправку письма с подтверждением регистрации здесь
+    res.status(201).json({ message: 'Регистрация прошла успешно.', user: newUser });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Внутренняя ошибка сервера.' });
+  }
+};
+
+// Вход в систему
+const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email и пароль обязательны.' });
+    }
+    // Ищем пользователя по email
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ message: 'Пользователь не найден.' });
+    }
+    // Проверяем корректность пароля
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Неверный пароль.' });
+    }
+    // Формируем JWT-токен (на 1 час). В payload передаём id и роль пользователя.
+    const token = jwt.sign(
+      { id: user.id, role: user.role_id },
+      process.env.JWT_SECRET || 'your_secret_key',
+      { expiresIn: '1h' }
+    );
+    res.status(200).json({ message: 'Вход выполнен успешно.', token, role: user.role_id });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Внутренняя ошибка сервера.' });
+  }
+};
+
+module.exports = {
+  register,
+  login
 };

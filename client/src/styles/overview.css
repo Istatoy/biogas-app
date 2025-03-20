@@ -3,9 +3,16 @@
     margin-bottom: 10px;
   }
   
-  .map-wrapper {
-    margin-bottom: 20px;
-  }
+  /* client/src/styles/overview.css */
+.map-wrapper {
+  margin-bottom: 20px;
+}
+
+.map-wrapper .gm-style {
+  border: 8px solid var(--accent-color, #2a9d8f) !important;
+  border-radius: 6px;
+}
+
   
   .filters-container {
     display: flex;

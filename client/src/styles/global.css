@@ -1,8 +1,20 @@
 /* client/src/styles/global.css */
+:root {
+  --bg-color: #ffffff;
+  --text-color: #333333;
+  --accent-color: #2a9d8f;
+  --divider-color: #e0e0e0;
+  --header-bg: #ffffff;
+  --sidebar-bg: #f7f7f7;
+}
+
+
 body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-family: 'Roboto', sans-serif;
   margin: 0;
-  font-family: Arial, sans-serif;
-  background-color: #f0f0f0;
+  padding: 0;
 }
 
 .page-container {
@@ -15,4 +27,37 @@ body {
     margin-left: 0;
     padding: 80px 10px 10px;
   }
+}
+/* client/src/styles/global.css (или components.css) */
+
+.search-input {
+  padding: 8px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  width: 250px;
+  font-size: 1rem;
+  font-family: 'Roboto', sans-serif;
+  outline: none;
+  transition: border 0.3s ease;
+}
+
+.search-input:focus {
+  border-color: #2a9d8f; /* акцентный зелёный */
+}
+
+.export-button {
+  padding: 8px 12px;
+  background-color: #2a9d8f;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-right: 5px;
+  font-size: 0.9rem;
+  font-family: 'Roboto', sans-serif;
+}
+
+.export-button:hover {
+  background-color: #23867a;
 }
